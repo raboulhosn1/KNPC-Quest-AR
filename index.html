@@ -2,11 +2,21 @@
 <html>
 <head>
     <title>KNPC Quest AR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://jeromeetienne.github.io/AR.js/aframe/build/aframe-ar.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/geolib@3.3.1/lib/index.min.js"></script>
+    <style>
+        body {
+            -webkit-user-select: none;
+            user-select: none;
+        }
+    </style>
 </head>
 <body style="margin: 0; overflow: hidden;">
+    <h2 style="position: absolute; top: 10px; left: 10px; background: black; color: white; padding: 5px; z-index: 1000;">GPS Status: <span id="gpsStatus">Waiting...</span></h2>
+    <button style="position: absolute; top: 50px; left: 10px; z-index: 1000;" onclick="updateGPS()">Update GPS</button>
+    
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
         <a-assets>
             <a-asset-item id="knpcBooth" src="./knpc_booth.glb"></a-asset-item>
@@ -47,24 +57,21 @@
     </a-scene>
 
     <script>
-        // Display GPS Coordinates for Debugging
-        navigator.geolocation.watchPosition(function(position) {
-            console.log("GPS: " + position.coords.latitude + ", " + position.coords.longitude);
-        }, function(error) {
-            console.error("GPS Error: " + error.message);
-        }, {
-            enableHighAccuracy: true, 
-            maximumAge: 0
-        });
-
-        // Interactive Logic for Unlocking Locations
-        document.addEventListener("DOMContentLoaded", function() {
-            let redBarrel = document.getElementById("redBarrel");
-            redBarrel.addEventListener("click", function() {
-                let uniqueCode = "KNPC" + Math.floor(1000 + Math.random() * 9000);
-                alert("🎉 Congratulations! Your Unique Code: " + uniqueCode);
+        function updateGPS() {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                document.getElementById("gpsStatus").innerText = "GPS Active: " + position.coords.latitude + ", " + position.coords.longitude;
+                console.log("GPS Position Updated: ", position.coords.latitude, position.coords.longitude);
+            }, function(error) {
+                document.getElementById("gpsStatus").innerText = "GPS Error: " + error.message;
+                console.error("GPS Error: ", error.message);
+            }, {
+                enableHighAccuracy: true, 
+                maximumAge: 0
             });
-        });
+        }
+        
+        // Automatically update GPS on load
+        updateGPS();
     </script>
 </body>
 </html>
