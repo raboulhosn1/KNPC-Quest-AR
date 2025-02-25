@@ -11,10 +11,23 @@
             -webkit-user-select: none;
             user-select: none;
         }
+        #debugLog {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: black;
+            color: white;
+            padding: 5px;
+            z-index: 1000;
+            font-size: 14px;
+            width: 90%;
+            max-height: 200px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body style="margin: 0; overflow: hidden;">
-    <h2 style="position: absolute; top: 10px; left: 10px; background: black; color: white; padding: 5px; z-index: 1000;">GPS Status: <span id="gpsStatus">Waiting...</span></h2>
+    <div id="debugLog">Debug Log: Waiting...</div>
     <button style="position: absolute; top: 50px; left: 10px; z-index: 1000;" onclick="updateGPS()">Update GPS</button>
     
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
@@ -28,31 +41,73 @@
             <a-asset-item id="knpcWorker" src="./knpc_worker.glb"></a-asset-item>
         </a-assets>
 
+        <!-- Debugging Text Overlay for AR Object Load Checks -->
+        <script>
+            function logDebug(message) {
+                let logDiv = document.getElementById("debugLog");
+                logDiv.innerHTML += "<br>" + message;
+                console.log(message);
+            }
+        </script>
+
+        <!-- GPS Entities for AR Placement -->
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {
+                logDebug("Page Loaded. Initializing AR...");
+                
+                let assets = document.querySelectorAll("a-asset-item");
+                assets.forEach(asset => {
+                    asset.addEventListener("loaded", function() {
+                        logDebug("Model Loaded: " + asset.id);
+                    });
+                });
+            });
+        </script>
+        
+        <a-entity gps-entity-place="latitude: 29.38833290080186; longitude: 48.003490055566495" 
+                  gltf-model="#knpcBooth" scale="1 1 1"></a-entity>
+
+        <a-entity gps-entity-place="latitude: 29.388693957183015; longitude: 48.003310431211574" 
+                  gltf-model="#stage" scale="1 1 1"></a-entity>
+        
+        <a-entity gps-entity-place="latitude: 29.388693957183015; longitude: 48.003310431211574" 
+                  gltf-model="#knpcLogo" position="0 3 0" scale="1 1 1"></a-entity>
+
+        <a-entity gps-entity-place="latitude: 29.388453358501053; longitude: 48.003089910222435" 
+                  gltf-model="#glassBoat" scale="1 1 1"></a-entity>
+
+        <a-entity gps-entity-place="latitude: 29.389590483399587; longitude: 48.0032380262504" 
+                  id="finalStation" gltf-model="#kuwaitTowers" scale="1 1 1"></a-entity>
+
+        <a-entity gps-entity-place="latitude: 29.38833290080186; longitude: 48.003490055566495" 
+                  id="redBarrel" gltf-model="#redBarrel" scale="1 1 1"></a-entity>
+
+        <!-- KNPC Worker Roaming at Kuwait Towers -->
+        <a-entity id="knpcWorker" gps-entity-place="latitude: 29.389590483399587; longitude: 48.0032380262504"
+                  gltf-model="#knpcWorker" scale="1 1 1"
+                  animation="property: position; to: 2 0 2; dir: alternate; loop: true; dur: 5000">
+        </a-entity>
+
         <a-camera gps-camera rotation-reader></a-camera>
     </a-scene>
 
     <script>
         function updateGPS() {
             if (!navigator.geolocation) {
-                document.getElementById("gpsStatus").innerText = "GPS Error: Geolocation is not supported by this browser.";
-                console.error("GPS Error: Geolocation is not supported by this browser.");
+                logDebug("GPS Error: Geolocation is not supported by this browser.");
                 return;
             }
             
             navigator.permissions.query({ name: "geolocation" }).then(function(result) {
                 if (result.state === "denied") {
-                    document.getElementById("gpsStatus").innerText = "GPS Error: Location access is blocked. Enable permissions in browser settings.";
-                    console.error("GPS Error: Location access is blocked.");
+                    logDebug("GPS Error: Location access is blocked. Enable permissions in browser settings.");
                     return;
                 }
                 
                 navigator.geolocation.getCurrentPosition(function(position) {
-                    document.getElementById("gpsStatus").innerText = "GPS Active: " + position.coords.latitude + ", " + position.coords.longitude;
-                    console.log("GPS Position Updated: ", position.coords.latitude, position.coords.longitude);
+                    logDebug("GPS Active: " + position.coords.latitude + ", " + position.coords.longitude);
                 }, function(error) {
-                    let errorMsg = "GPS Error: " + (error.message || "Unknown error");
-                    document.getElementById("gpsStatus").innerText = errorMsg;
-                    console.error(errorMsg);
+                    logDebug("GPS Error: " + (error.message || "Unknown error"));
                 }, {
                     enableHighAccuracy: true, 
                     timeout: 10000,
