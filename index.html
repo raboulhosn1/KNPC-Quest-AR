@@ -28,45 +28,36 @@
             <a-asset-item id="knpcWorker" src="./knpc_worker.glb"></a-asset-item>
         </a-assets>
 
-        <!-- GPS Entities for AR Placement -->
-        <a-entity gps-entity-place="latitude: 29.38833290080186; longitude: 48.003490055566495" 
-                  gltf-model="#knpcBooth" scale="1 1 1"></a-entity>
-
-        <a-entity gps-entity-place="latitude: 29.388693957183015; longitude: 48.003310431211574" 
-                  gltf-model="#stage" scale="1 1 1"></a-entity>
-        
-        <a-entity gps-entity-place="latitude: 29.388693957183015; longitude: 48.003310431211574" 
-                  gltf-model="#knpcLogo" position="0 3 0" scale="1 1 1"></a-entity>
-
-        <a-entity gps-entity-place="latitude: 29.388453358501053; longitude: 48.003089910222435" 
-                  gltf-model="#glassBoat" scale="1 1 1"></a-entity>
-
-        <a-entity gps-entity-place="latitude: 29.389590483399587; longitude: 48.0032380262504" 
-                  id="finalStation" gltf-model="#kuwaitTowers" scale="1 1 1"></a-entity>
-
-        <a-entity gps-entity-place="latitude: 29.38833290080186; longitude: 48.003490055566495" 
-                  id="redBarrel" gltf-model="#redBarrel" scale="1 1 1"></a-entity>
-
-        <!-- KNPC Worker Roaming at Kuwait Towers -->
-        <a-entity id="knpcWorker" gps-entity-place="latitude: 29.389590483399587; longitude: 48.0032380262504"
-                  gltf-model="#knpcWorker" scale="1 1 1"
-                  animation="property: position; to: 2 0 2; dir: alternate; loop: true; dur: 5000">
-        </a-entity>
-
         <a-camera gps-camera rotation-reader></a-camera>
     </a-scene>
 
     <script>
         function updateGPS() {
-            navigator.geolocation.getCurrentPosition(function(position) {
-                document.getElementById("gpsStatus").innerText = "GPS Active: " + position.coords.latitude + ", " + position.coords.longitude;
-                console.log("GPS Position Updated: ", position.coords.latitude, position.coords.longitude);
-            }, function(error) {
-                document.getElementById("gpsStatus").innerText = "GPS Error: " + error.message;
-                console.error("GPS Error: ", error.message);
-            }, {
-                enableHighAccuracy: true, 
-                maximumAge: 0
+            if (!navigator.geolocation) {
+                document.getElementById("gpsStatus").innerText = "GPS Error: Geolocation is not supported by this browser.";
+                console.error("GPS Error: Geolocation is not supported by this browser.");
+                return;
+            }
+            
+            navigator.permissions.query({ name: "geolocation" }).then(function(result) {
+                if (result.state === "denied") {
+                    document.getElementById("gpsStatus").innerText = "GPS Error: Location access is blocked. Enable permissions in browser settings.";
+                    console.error("GPS Error: Location access is blocked.");
+                    return;
+                }
+                
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    document.getElementById("gpsStatus").innerText = "GPS Active: " + position.coords.latitude + ", " + position.coords.longitude;
+                    console.log("GPS Position Updated: ", position.coords.latitude, position.coords.longitude);
+                }, function(error) {
+                    let errorMsg = "GPS Error: " + (error.message || "Unknown error");
+                    document.getElementById("gpsStatus").innerText = errorMsg;
+                    console.error(errorMsg);
+                }, {
+                    enableHighAccuracy: true, 
+                    timeout: 10000,
+                    maximumAge: 0
+                });
             });
         }
         
