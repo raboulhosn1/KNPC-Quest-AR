@@ -24,90 +24,95 @@
             max-height: 200px;
             overflow-y: auto;
         }
+        #questionBox {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            text-align: center;
+            border: 2px solid black;
+            z-index: 2000;
+        }
     </style>
 </head>
 <body style="margin: 0; overflow: hidden;">
     <div id="debugLog">Debug Log: Waiting...</div>
     <button style="position: absolute; top: 50px; left: 10px; z-index: 1000;" onclick="updateGPS()">Update GPS</button>
+    <button style="position: absolute; top: 100px; left: 10px; z-index: 1000;" onclick="resetARView()">Reset View</button>
+    
+    <div id="questionBox">
+        <p id="questionText">Question will appear here</p>
+        <button onclick="answerQuestion(true)">Correct</button>
+        <button onclick="answerQuestion(false)">Wrong</button>
+    </div>
     
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
         <a-assets>
-            <a-asset-item id="knpcBooth" src="./knpc_booth.glb"></a-asset-item>
-            <a-asset-item id="stage" src="./stage.glb"></a-asset-item>
             <a-asset-item id="knpcLogo" src="./knpc_logo.glb"></a-asset-item>
-            <a-asset-item id="glassBoat" src="./glass_boat.glb"></a-asset-item>
-            <a-asset-item id="kuwaitTowers" src="./kuwait_towers.glb"></a-asset-item>
-            <a-asset-item id="redBarrel" src="./red_barrel.glb"></a-asset-item>
-            <a-asset-item id="knpcWorker" src="./knpc_worker.glb"></a-asset-item>
         </a-assets>
 
-        <!-- Debugging Text Overlay for AR Object Load Checks -->
-        <script>
-            function logDebug(message) {
-                let logDiv = document.getElementById("debugLog");
-                logDiv.innerHTML += "<br>" + message;
-                console.log(message);
-            }
-        </script>
-
-        <!-- GPS Entities for AR Placement -->
-        <script>
-            document.addEventListener("DOMContentLoaded", function() {
-                logDebug("Page Loaded. Initializing AR...");
-                
-                let assets = document.querySelectorAll("a-asset-item");
-                assets.forEach(asset => {
-                    asset.addEventListener("loaded", function() {
-                        logDebug("Model Loaded: " + asset.id);
-                    });
-                });
-            });
-        </script>
-        
-        <a-entity gps-entity-place="latitude: 29.38833290080186; longitude: 48.003490055566495" 
-                  gltf-model="#knpcBooth" scale="1 1 1"></a-entity>
-
+        <!-- Floating KNPC Logos for Each Level -->
         <a-entity gps-entity-place="latitude: 29.388693957183015; longitude: 48.003310431211574" 
-                  gltf-model="#stage" scale="1 1 1"></a-entity>
+                  id="logo1" gltf-model="#knpcLogo" scale="3 3 3" onclick="showQuestion(1)"></a-entity>
         
-        <a-entity gps-entity-place="latitude: 29.388693957183015; longitude: 48.003310431211574" 
-                  gltf-model="#knpcLogo" position="0 3 0" scale="1 1 1"></a-entity>
-
         <a-entity gps-entity-place="latitude: 29.388453358501053; longitude: 48.003089910222435" 
-                  gltf-model="#glassBoat" scale="1 1 1"></a-entity>
-
+                  id="logo2" gltf-model="#knpcLogo" scale="3 3 3" onclick="showQuestion(2)" visible="false"></a-entity>
+        
         <a-entity gps-entity-place="latitude: 29.389590483399587; longitude: 48.0032380262504" 
-                  id="finalStation" gltf-model="#kuwaitTowers" scale="1 1 1"></a-entity>
+                  id="logo3" gltf-model="#knpcLogo" scale="3 3 3" onclick="showQuestion(3)" visible="false"></a-entity>
 
         <a-entity gps-entity-place="latitude: 29.38833290080186; longitude: 48.003490055566495" 
-                  id="redBarrel" gltf-model="#redBarrel" scale="1 1 1"></a-entity>
-
-        <!-- KNPC Worker Roaming at Kuwait Towers -->
-        <a-entity id="knpcWorker" gps-entity-place="latitude: 29.389590483399587; longitude: 48.0032380262504"
-                  gltf-model="#knpcWorker" scale="1 1 1"
-                  animation="property: position; to: 2 0 2; dir: alternate; loop: true; dur: 5000">
-        </a-entity>
+                  id="finalStation" gltf-model="#knpcLogo" scale="3 3 3" visible="false"></a-entity>
 
         <a-camera gps-camera rotation-reader></a-camera>
     </a-scene>
 
     <script>
-        function updateGPS() {
-            if (!navigator.geolocation) {
-                logDebug("GPS Error: Geolocation is not supported by this browser.");
+        let currentLevel = 1;
+
+        function showQuestion(level) {
+            document.getElementById("questionBox").style.display = "block";
+            document.getElementById("questionText").innerText = "Question for Level " + level;
+        }
+
+        function answerQuestion(isCorrect) {
+            document.getElementById("questionBox").style.display = "none";
+            if (!isCorrect) {
+                alert("Game Over! Try Again.");
+                window.location.reload();
                 return;
             }
             
+            document.getElementById("logo" + currentLevel).setAttribute("visible", "false");
+            currentLevel++;
+            if (currentLevel <= 3) {
+                document.getElementById("logo" + currentLevel).setAttribute("visible", "true");
+            } else {
+                alert("🎉 Congrats! Return to KNPC Booth for your unique code.");
+                document.getElementById("finalStation").setAttribute("visible", "true");
+            }
+        }
+
+        function resetARView() {
+            let camera = document.querySelector("a-camera");
+            camera.setAttribute("position", "0 1.6 0");
+        }
+
+        function updateGPS() {
+            if (!navigator.geolocation) {
+                return;
+            }
             navigator.permissions.query({ name: "geolocation" }).then(function(result) {
                 if (result.state === "denied") {
-                    logDebug("GPS Error: Location access is blocked. Enable permissions in browser settings.");
                     return;
                 }
-                
                 navigator.geolocation.getCurrentPosition(function(position) {
-                    logDebug("GPS Active: " + position.coords.latitude + ", " + position.coords.longitude);
+                    console.log("GPS Active: " + position.coords.latitude + ", " + position.coords.longitude);
                 }, function(error) {
-                    logDebug("GPS Error: " + (error.message || "Unknown error"));
+                    console.log("GPS Error: " + (error.message || "Unknown error"));
                 }, {
                     enableHighAccuracy: true, 
                     timeout: 10000,
@@ -115,8 +120,7 @@
                 });
             });
         }
-        
-        // Automatically update GPS on load
+
         updateGPS();
     </script>
 </body>
